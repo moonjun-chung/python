@@ -1,0 +1,131 @@
+# A Service is an abstraction which defines a logical set of Pods and a policy
+#   by which to access them.
+
+# The set of Pods targeted by a Service is determined by a selector.
+
+# The service object must be a valid RFC 1035 label name:
+#   - contain at most 63 characters
+#   - contain only lowercase alphanumeric chars or '-'
+#   - start with an alphabetic char
+#   - end with an alphanumeric char
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-service
+spec:
+  selector:
+    app: example-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9376
+
+# The service above creates a Service that allows each Pod to listen on TCP port 9376 with label app=example-app.
+
+# By default, targetPort is set to the same value as the port field.
+#   - In this example, we set it to a non-default value of 9376. 
+
+# The default protocol is TCP. Others you can use are:
+#   - UDP:  
+#   - SCTP(v1.20):
+#       -> Not supported on Windows based nodes.
+
+# Every node in the cluster runs a kube-proxy.
+#   - kube-proxy maintainst the network rules on nodes.
+#   - It allows network communication to Pods from network sessions inside/outside of the cluster.
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-service
+spec:
+  selector:
+    app: example-app
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 9376
+  - name: https
+    protocol: TCP
+    port: 443
+    targetPort: 9377
+
+---
+# Kubernetes allows us to configure multiple port definitions on a Service object.
+#   - must give all ports names so it is unambiguous
+#   - names must be all lowercase alphanumeric chars and '-'
+#   - must start and end with alphanumeric char
+
+# You can create a headless Service by specifying:
+#   clusterIP: None
+
+# A headless Service does not allocate a clusterIP. Kube-proxy does not handle the Services and the platform
+#   does not load balance or proxy for them.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-headless-svc
+spec:
+  clusterIP: None
+  selector:
+    app: example-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9376
+
+---
+# There are four different kinds of ServiceTypes:
+#
+#   - ClusterIP (Default): Exposes the Service on a cluster-internal IP. Service is only reachable within the cluster.
+#
+#   - NodePort: Exposes the Service on each Node's IP at a static port.
+#       -> Able to contact the NodePort Service from outside the cluster with <NodeIP>:<NodePort>
+#
+#   - LoadBalancer: Exposes Service externally using cloud provider's load balancer.
+#
+#   - ExternalName: Maps the Service to the contents of the externalName
+
+# https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
+# Type NodePort:
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-service
+spec:
+  type: NodePort
+  selector:
+    app: example-app
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30007   # Optional
+  
+# nodePort allocation is optional b/c k8s will by default assign a port in the range 30000-32767
+---
+
+# https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
+# Type LoadBalancer:
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: example-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9376
+  clusterIP: 10.0.171.239
+status:
+  LoadBalancer:
+    ingress:
+    - ip: 192.0.2.127
