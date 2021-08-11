@@ -1,6 +1,9 @@
 # A Service is an abstraction which defines a logical set of Pods and a policy
 #   by which to access them.
 
+# Each Service is assigned a unique IP that is tied to the lifespan of the Service.
+#   This IP will not chance while the Service is alive.
+
 # The set of Pods targeted by a Service is determined by a selector.
 
 # The service object must be a valid RFC 1035 label name:
@@ -19,9 +22,27 @@ spec:
   ports:
   - protocol: TCP
     port: 80
-    targetPort: 9376
+    targetPort: 9376      # This must match the containerPort of the pod
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    app: example-app
+  spec:
+    containers:
+    - name: nginx
+      image: nginx
+      ports:
+      - containerPort: 9376
+---
 
 # The service above creates a Service that allows each Pod to listen on TCP port 9376 with label app=example-app.
+
+# port        = makes a service visible to other services running within the same k8s cluster
+# targetPort  = port on which the service will send requests to, that your pod will be listening on.
+#               The container will need to listen on this port.
 
 # By default, targetPort is set to the same value as the port field.
 #   - In this example, we set it to a non-default value of 9376. 
@@ -129,3 +150,5 @@ status:
   LoadBalancer:
     ingress:
     - ip: 192.0.2.127
+---
+
